@@ -1,0 +1,23 @@
+uniswap:
+  summary: compile uniswap
+  command: |
+    curl -s -o /tmp/uniswap.zip -L {{.contracts_archive.uniswap}} && \
+    unzip -q -o /tmp/uniswap.zip -d /tmp && \
+    rm /tmp/uniswap.zip && \
+    mkdir -p contracts/uniswap && \
+    abigen --sol /tmp/uniswap-v3-core-main/contracts/UniswapV3Pool.sol --pkg uniswap --out contracts/uniswap/uniswap.go && \
+    rm -rf /tmp/uniswap-v3-core-main
+
+two:
+  summary: echo two
+  command: echo two
+
+all:
+  summary: echo one two
+  command: |
+    robo -c {{ .robo.file }} uniswap
+    robo -c {{ .robo.file }} two
+
+variables:
+  contracts_archive:
+    uniswap: https://github.com/Uniswap/uniswap-v3-core/archive/refs/heads/main.zip
