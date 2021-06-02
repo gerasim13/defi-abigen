@@ -1,23 +1,41 @@
 uniswap:
-  summary: compile uniswap
+  summary: Download and compile uniiswap contracts
   command: |
     curl -s -o /tmp/uniswap.zip -L {{.contracts_archive.uniswap}} && \
     unzip -q -o /tmp/uniswap.zip -d /tmp && \
     rm /tmp/uniswap.zip && \
     mkdir -p contracts/uniswap && \
-    abigen --sol /tmp/uniswap-v3-core-main/contracts/UniswapV3Pool.sol --pkg uniswap --out contracts/uniswap/uniswap.go && \
+    docker run -v /tmp/uniswap-v3-core-main:/tmp/uniswap-v3-core-main ethereum/solc:0.7.6 - --abi --bin /tmp/uniswap-v3-core-main/contracts/UniswapV3Pool.sol -o /tmp/uniswap-v3-core-main/contracts/ #&& \
+    abigen --bin=/tmp/uniswap-v3-core-main/contracts/UniswapV3Pool.bin --abi=/tmp/uniswap-v3-core-main/contracts/UniswapV3Pool.abi  --pkg uniswap --out contracts/uniswap/uniswap.go && \
     rm -rf /tmp/uniswap-v3-core-main
 
-two:
-  summary: echo two
-  command: echo two
+sushiswap:
+  summary: Download and compile sushiswap contracts
+  command: |
+    curl -s -o /tmp/sushiswap.zip -L {{.contracts_archive.sushiswap}} && \
+    unzip -q -o /tmp/sushiswap.zip -d /tmp && \
+    rm /tmp/sushiswap.zip && \
+    curl -s -o /tmp/openzeppelin.zip -L {{.contracts_archive.openzeppelin}} && \
+    unzip -q -o /tmp/openzeppelin.zip -d /tmp && \
+    mv /tmp/openzeppelin-contracts-3.1.0 /tmp/sushiswap-master/openzeppelin && \
+    rm /tmp/openzeppelin.zip && \
+    sed -i -e 's/pragma solidity 0.6.12/pragma solidity 0.7.6/g' /tmp/sushiswap-master/contracts/*.sol && \
+    sed -i -e 's/pragma solidity ^0.6.2/pragma solidity 0.7.6/g' /tmp/sushiswap-master/openzeppelin/contracts/*/*.sol && \
+    sed -i -e 's/pragma solidity ^0.6.0/pragma solidity 0.7.6/g' /tmp/sushiswap-master/openzeppelin/contracts/*/*.sol && \
+    sed -i -e 's/pragma solidity ^0.6.0/pragma solidity 0.7.6/g' /tmp/sushiswap-master/openzeppelin/contracts/*/*/*.sol && \
+    docker run -v /tmp/sushiswap-master:/tmp/sushiswap-master ethereum/solc:0.7.6 - @openzeppelin/=/tmp/sushiswap-master/openzeppelin/ --abi --bin /tmp/sushiswap-master/contracts/MasterChef.sol -o /tmp/sushiswap-master/contracts/ #&& \
+    mkdir -p contracts/sushiswap && \
+    abigen --bin=/tmp/sushiswap-master/contracts/MasterChef.bin --abi=/tmp/sushiswap-master/contracts/MasterChef.abi --pkg sushiswap --out contracts/sushiswap/masterchef.go && \
+    # rm -rf /tmp/sushiswap-master
 
 all:
-  summary: echo one two
+  summary: Download and compile all contracts
   command: |
     robo -c {{ .robo.file }} uniswap
-    robo -c {{ .robo.file }} two
+    robo -c {{ .robo.file }} sushiswap
 
 variables:
   contracts_archive:
     uniswap: https://github.com/Uniswap/uniswap-v3-core/archive/refs/heads/main.zip
+    sushiswap: https://github.com/sushiswap/sushiswap/archive/refs/heads/master.zip
+    openzeppelin: https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v3.1.0.zip
